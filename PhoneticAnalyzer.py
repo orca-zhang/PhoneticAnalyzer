@@ -1,30 +1,29 @@
 import copy
 
-# a/o/e
 # -ie to -i,e
 # -ia to -i,a
-ONE_AOE_ENABLE = False
-
+# -ua to -u,a
+# -uo to -u,o
 # -ian to -i,an
 # -iao to -i,ao
 # -uan to -u,an
 # -uang to -u,ang
-FORCE_SEPERATE = False
+# GREEDY_MODE
 
 # zh, ch, sh
-ACRONYM_CACUMINAL = False
+# ACRONYM_CACUMINAL
 
 
 class PhoneticAnalyzer():
-    def __init__(self):
+    def __init__(self, gm=True, ac=False):
         self.d = {}
+        self.greedy_mode = gm
+        self.acronym_cacuminal = ac
         rf = open('dict', 'r')
         try:
             while True:
                 line = rf.readline()[:-1]
                 if line:
-                    if not ONE_AOE_ENABLE and len(line) == 1:
-                        continue
                     cur_d = self.d
                     for ch in line:
                         cur_d.setdefault(ch, {})
@@ -48,14 +47,11 @@ class PhoneticAnalyzer():
                 if i == len(str) - 1:
                     return s
                 else:
-                    if not FORCE_SEPERATE and not ONE_AOE_ENABLE:
-                        if 'ui'.find(ch) >= 0 and str[i + 1] == 'a':
-                            if i + 2 < len(str):
-                                if str[i + 2] == 'n':
-                                    continue
-                                else:
-                                    if ch == 'i' and str[i + 2] == 'o':
-                                        continue
+                    if self.greedy_mode:
+                        if 'uiv'.find(ch) >= 0 and 'aoe'.find(str[i + 1]) >= 0:
+                            # check if is valid
+                            if cur_d.get(str[i + 1], None):
+                                continue
                     ts = copy.deepcopy(s)
                     ts.append(pos + i + 1)
                     sr = self.__segment__(str[i + 1:], pos + i + 1, r, ts)
@@ -65,7 +61,9 @@ class PhoneticAnalyzer():
 
     def segment(self, str):
         r = []
-        self.__segment__(str.lower(), 0, r, [])
+        sr = self.__segment__(str.lower(), 0, r, [])
+        if sr is not None:
+            r.append(sr)
         return sorted(r, key=lambda seg: len(seg))
 
     def acronym(self, str):
@@ -73,9 +71,9 @@ class PhoneticAnalyzer():
         r = self.segment(str)
         segs = []
         for seg in r:
-            s = []
-            for pos in [0] + seg:
-                if ACRONYM_CACUMINAL:
+            s = [str[0]]
+            for pos in seg:
+                if self.acronym_cacuminal:
                     if 'zcs'.find(str[pos]) >= 0:
                         if str[pos + 1] == 'h':
                             s.append(str[pos] + 'h')
@@ -101,6 +99,12 @@ class PhoneticAnalyzer():
 
 if __name__ == '__main__':
     pa = PhoneticAnalyzer()
-    print(pa.seperate('angengan'))
-    print(pa.seperate('gangangan'))
+    print(pa.segment('xys'))
+    print(pa.seperate('wuanxin'))
+    print(pa.acronym('shengou'))
+    print(pa.seperate('buane'))
+    print(pa.seperate('shuo'))
+    print(pa.seperate('xinangang'))
+    print(pa.seperate('tienanen'))
+    print(pa.segment('gangangan'))
     print(pa.seperate('xinganxian'))
