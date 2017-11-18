@@ -102,7 +102,7 @@ if __name__ == '__main__':
     print(pa.segment('xys'))
     print(pa.seperate('wuanxin'))
     print(pa.acronym('shengou'))
-    print(pa.seperate('buane'))
+    print(pa.seperate('buanerao'))
     print(pa.seperate('shuo'))
     print(pa.seperate('xinangang'))
     print(pa.seperate('tienanen'))
