@@ -1,20 +1,21 @@
 import copy
 
-# -ie to -i,e
-# -ia to -i,a
-# -ua to -u,a
-# -uo to -u,o
-# -ian to -i,an
-# -iao to -i,ao
-# -uan to -u,an
-# -uang to -u,ang
-# GREEDY_MODE
-
-# zh, ch, sh
-# ACRONYM_CACUMINAL
-
 
 class PhoneticAnalyzer():
+    # ao to a,o
+    # -ie to -i,e
+    # -ia to -i,a
+    # -ua to -u,a
+    # -uo to -u,o
+
+    # -ian to -i,an
+    # -iao to -i,ao
+    # -uan to -u,an
+    # -uang to -u,ang
+    # GREEDY_MODE
+
+    # zh, ch, sh
+    # ACRONYM_CACUMINAL
     def __init__(self, gm=True, ac=False):
         self.d = {}
         self.greedy_mode = gm
@@ -36,7 +37,7 @@ class PhoneticAnalyzer():
         finally:
             rf.close()
 
-    def __segment__(self, str, pos, r, s):
+    def __segment__(self, str, next_ok, pos, r, s):
         cur_d = self.d
         for i, ch in enumerate(str):
             cur_d = cur_d.get(ch, None)
@@ -44,24 +45,31 @@ class PhoneticAnalyzer():
                 return None
             is_leaf = cur_d.get('leaf', False)
             if is_leaf:
+                # len is 1 and can be combined with last, ommit
+                if self.greedy_mode and i == 0 and next_ok:
+                    continue
                 if i == len(str) - 1:
                     return s
                 else:
                     if self.greedy_mode:
-                        if 'uiv'.find(ch) >= 0 and 'aoe'.find(str[i + 1]) >= 0:
+                        if 'uiv'.find(ch) >= 0 and str[i + 1] == 'a':
                             # check if is valid
                             if cur_d.get(str[i + 1], None):
                                 continue
+                    np = pos + i + 1
                     ts = copy.deepcopy(s)
-                    ts.append(pos + i + 1)
-                    sr = self.__segment__(str[i + 1:], pos + i + 1, r, ts)
+                    ts.append(np)
+                    n_ok = self.greedy_mode\
+                        and 'aoe'.find(str[i + 1]) >= 0\
+                        and cur_d.get(str[i + 1], None)
+                    sr = self.__segment__(str[i + 1:], n_ok, np, r, ts)
                     if sr is not None:
                         r.append(sr)
         return None
 
     def segment(self, str):
         r = []
-        sr = self.__segment__(str.lower(), 0, r, [])
+        sr = self.__segment__(str.lower(), None, 0, r, [])
         if sr is not None:
             r.append(sr)
         return sorted(r, key=lambda seg: len(seg))
@@ -100,7 +108,13 @@ class PhoneticAnalyzer():
 if __name__ == '__main__':
     pa = PhoneticAnalyzer()
     print(pa.segment('xys'))
-    print(pa.seperate('wuanxin'))
+    print(pa.seperate('fao'))
+    print(pa.seperate('mao'))
+    print(pa.seperate('maou'))
+    print(pa.seperate('diao'))
+    print(pa.seperate('diei'))
+    print(pa.seperate('dieru'))
+    print(pa.acronym('wuanxin'))
     print(pa.acronym('shengou'))
     print(pa.seperate('buanerao'))
     print(pa.seperate('shuo'))
